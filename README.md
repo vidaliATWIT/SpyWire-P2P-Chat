@@ -1,7 +1,7 @@
 ===SPYWIRE P2P Chat Application===
 Designed and programmed by Ian Vidal #vidali@wit.edu
 Additional methods developed by Richard Waltters #waltersr@wit.edu
-Current version: 0.0
+Current version: 0.1
 
 ==Description==
 
@@ -22,3 +22,7 @@ exit = close the program
 --EXIT = exits the message line
 
 Requires socket library to be installed in order to compile.
+
+==New Additions version 0.1==
+-basic rc4 encryption module added..
+-several utility methods related to encryption, decryption and sending added to main file.
