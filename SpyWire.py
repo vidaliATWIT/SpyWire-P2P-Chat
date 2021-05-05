@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-@author: vidali, waltersr
+@authors: vidali, waltersr
 """
 
 import socket
 import time
 import random
+import pyrc4
 from _thread import*
 
 class Peer:
@@ -17,12 +18,16 @@ class Peer:
     printList = []
     socketBuffer = []
     userName = ''
-    port = 9323 ##Change this number when testing locally via two separate consoles.
+    key = ""
+    rc4 = None
+    port = 9322 ##Change this number when testing locally via two separate consoles.
 
     ##initializes peer class
     def __init__(self):
       file = open("PeerList"+str(self.port)+".txt", "a")
       file.close()
+      self.generateKey()
+      self.initRC4()
       self.getPeersFromFile()
     
     ##main command line loop
@@ -78,6 +83,7 @@ class Peer:
                 flag=False;
             else:
                 clientMessage = self.userName + ": " + clientMessage
+                clientMessage = self.mod(clientMessage) ##encrypts message
             clientSocket.send(clientMessage.encode())
 
             serverMessage = clientSocket.recv(1024).decode()
@@ -149,6 +155,7 @@ class Peer:
             elif (clientMessage=='--QUIT'):
                 flag=False
             else:
+                clientMessage = self.rcvmod(clientMessage) ##decrypts message
                 print(clientMessage)
                 connectionSocket.send((clientMessage).encode())
         connectionSocket.close()
@@ -225,6 +232,34 @@ class Peer:
             if not duplicate:
                 self.socketList.append((socketPair.rsplit(":")[0],int(socketPair.split(":")[1])))
         socketListFile.close()
+        
+    ##Encryption methods
+    
+    def generateKey(self): ##generates a new random key every session
+        key = 0
+        for i in range(6):
+            key+= (pow(10,i))*random.randint(1, 9)
+        self.key = str(key)
+        
+    def initRC4(self): ##initialize the rc4 object and generate the keyStream for this session
+        self.rc4 = pyrc4.rc4(self.key)
+        
+    def ixor(self, message): ##xor with internal keyStream
+        return self.rc4.mxor(message)
+    
+    def exor(self, message, keyStream): ##xor with external keyStream
+        return self.rc4.uXOR(message, keyStream)
+    
+    def mod(self, message): ##encrypts message and modifies for sending
+        message = self.rc4.getString(self.ixor(message))
+        print("Start of message: " + message + "END OF MESSAGE")
+        return message + "??x" + self.rc4.keyStream
+    
+    def rcvmod(self, message): ##receives modified message, splits and de-encrypts
+        msgList = message.split("??x")
+        return self.rc4.getString(self.exor(msgList[0], msgList[1]))
+        
+            
             
 s = Peer() ##creates the Peer object
 s.mainLoop() ##runs the main loop
