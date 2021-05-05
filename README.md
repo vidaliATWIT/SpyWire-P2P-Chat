@@ -24,5 +24,5 @@ exit = close the program
 Requires socket library to be installed in order to compile.
 
 ==New Additions version 0.1==
--basic rc4 encryption module added..
+-basic rc4 encryption module added.
 -several utility methods related to encryption, decryption and sending added to main file.
