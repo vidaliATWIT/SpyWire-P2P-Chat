@@ -37,4 +37,14 @@ see = print peers who are online
 send = share your peer list with another peer
 add = add a peer to your peer list
 exit = close the program
+<<<<<<< HEAD
 --EXIT = exits the message line
+=======
+--EXIT = exits the message line
+
+Requires socket library to be installed in order to compile.
+
+==New Additions version 0.1==
+basic rc4 encryption module added.
+several utility methods related to encryption, decryption and sending added to main file.
+>>>>>>> 7b9c48b59a036fe1b1faa86bb28e1aab48df4412
