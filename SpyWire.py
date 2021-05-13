@@ -11,10 +11,12 @@ from tkinter import messagebox
 # GUI class for the chat
 class GUI:
     
+    h_name = socket.gethostname()
+    IP_address = socket.gethostbyname(h_name)
     rc4 =None
     key="2313sadklfjasdlfkjl"
     username = ""
-    ip = ''
+    ip = socket.gethostbyname(h_name)
     port = 9091
     
     socketList = [""]
@@ -23,7 +25,7 @@ class GUI:
         "":""
         }
     
-    # constructor method
+    ## Constructor method
     def __init__(self):
         
         ## Peer List Files
@@ -31,64 +33,61 @@ class GUI:
         file = open("data/UsernameAssignment"+str(self.port)+".txt", "a")
         file.close()
         
-        print(self.peerList[self.username])
-        print(self.socketList[0])
-        
+        ## Retrieve saved peers from file
         self.getPeersFromFile()
         
-        # chat window which is currently hidden
+        ## Create chat window which and hide
         self.Window = Tk()
         self.Window.withdraw() 
         self.initLogin()
         self.Window.mainloop()
 
-        
+    ## Initialize the main server thread    
     def initReceiver(self):
         start_new_thread(self.serverThread, (self,))
         
-    ##server thread: listening for connections
+    ## Server Thread: listening for connections
     def serverThread(self, nothing):
-        serverMessage = ""
-        serverSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        serverSocket.bind(('', self.port))
-        serverSocket.listen(5) 
+        self.serverSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.serverSocket.bind(('', self.port))
+        self.serverSocket.listen(5) 
         print('The server is ready to receive')
          
-        flag = True
+        self.sFlag = True
         
-        while (flag):
-            try:
-                connectionSocket, addr = serverSocket.accept()
-            except OSError as error:
-                print("Could not connect!")
-                break
-            ##if Succeeded
-            ##print ('Connected with ' + addr[0] + ';' + str(addr[1])) ##ip and port
+        while (self.sFlag):
+      
+            connectionSocket, addr = self.serverSocket.accept()
+     
             clientMessage = connectionSocket.recv(2048).decode() 
             if (clientMessage=="--PEER"):
                 peerList = connectionSocket.recv(2048).decode()
                 time.sleep(0.666)
                 connectionSocket.close()
                 self.rcvPeerList(peerList)
-                ##print("DONE")
 
             elif (clientMessage=="--EXIT"):
                 connectionSocket.close()
             elif (clientMessage=='--QUIT'):
-                flag=False
+                connectionSocket.close()
+                self.serverSocket.close()
+                self.sFlag=False
             elif (clientMessage=="--GETNAME"):
                 return(self.username)
             else:
-                clientMessage = self.decrypt(clientMessage) ##decrypt message
-                self.printToScreen(clientMessage)
-                connectionSocket.send((clientMessage).encode())
+                clientMessage = self.decrypt(clientMessage) ##decrypt 
+                clientMessage = clientMessage.split("///")
+                clientMessage[1] = str(self.getNameFromIP(clientMessage[0]) + ": " + clientMessage[1])
+                self.printToScreen(clientMessage[1])
+                connectionSocket.send((clientMessage[1]).encode())
+
         connectionSocket.close()
-        serverSocket.close()
         
         
     def clearFrame(self):
         for widgets in self.frame.winfo_children():
             widgets.destroy()
+            
     def initSender(self):
         self.sender = Toplevel()
         self.sender.title(self.username)
@@ -194,7 +193,7 @@ class GUI:
           
         self.textCons.config(state = DISABLED)
         
-    
+    ## Initializes add peer window
     def initAddPeer(self):
         self.sender.withdraw()
         self.addPeerWin = Toplevel()
@@ -203,35 +202,35 @@ class GUI:
         self.addPeerWin.configure(width=400, height=150, bg="black")
         self.addPeerWin.protocol("WM_DELETE_WINDOW", lambda: self.on_closing())
         
-        #set ip port label
+        ## Set ip port label
         self.ip_port = Label(self.addPeerWin, text="ip:port:", justify=LEFT,
                              font="Fixedsys 12 bold", bg="black", fg='white')
         self.ip_port.place(relheight = .15, relx=.27, rely=.32, anchor="center")
         
-        #set default username
+        ## Set default username
         self.set_username = Label(self.addPeerWin, text="username:", justify=LEFT,
                              font="Fixedsys 12 bold", bg="black", fg='white')
         self.set_username.place(relheight = .15, relx=.27, rely=.57, anchor="center")
         
-        ##input ip:port
+        ## Input ip:port
         self.input_ip_port = Entry(self.addPeerWin, font="Fixedsys 10", bg="black", fg="white", relief=GROOVE)
         self.input_ip_port.place(relheight=.15, relx=.40, rely=.25)
         
-        ##input username
+        ## Input username
         self.input_username = Entry(self.addPeerWin, font="Fixedsys 10", bg="black", fg="white", relief=GROOVE)
         self.input_username.place(relheight=.15, relx=.40, rely=.50)
         
-        ##add button
+        ## Add button
         self.ok_add = Button(self.addPeerWin, font="Fixedsys 10", text="add", bg="black", fg="white", relief=GROOVE, command = lambda: self.addPeer(self.input_ip_port.get()))
         self.ok_add.place(relheight=.15, relwidth=.20, relx=.40, rely = .75)
         
-        
+    ## Init login window   
     def initLogin(self):
         self.login = Toplevel()
         self.login.title("Login")
         self.login.resizable(width=False, height=False)
         self.login.configure(width=400, height=300, bg="black")
-        # create a Label
+ 
         self.pls = Label(self.login, 
                        text = "Enter username:",
                        justify = CENTER, 
@@ -243,8 +242,6 @@ class GUI:
                        relx = 0.5, 
                        rely = 0.19, anchor=CENTER)
      
-        # create a entry box for 
-        # tyoing the message
         self.entryName = Entry(self.login, 
                              font = "Fixedsys 12",
                              bg='black',
@@ -257,11 +254,8 @@ class GUI:
                              rely = 0.34,
                              anchor=CENTER)
     
-        # set the focus of the curser
         self.entryName.focus()
           
-        # create a Continue Button 
-        # along with action
         self.go = Button(self.login,
                          text = "login", 
                          font = "Fixedsys 14 bold", 
@@ -272,7 +266,8 @@ class GUI:
           
         self.go.place(relx = 0.4,
                       rely = 0.50)
-        
+    
+    ## Sets username, generates custom key and sets up new windows
     def authenticate(self, name):
         self.username=name
         self.genCustomKey()##generates custom key with login info
@@ -281,9 +276,9 @@ class GUI:
         self.initSender() ##receiver window
         self.sender.protocol("WM_DELETE_WINDOW", lambda: self.on_closing())
 
-    # function to basically start the thread for sending messages
+    ## Function to start the thread for sending messages
     def sendButton(self, msg):
-        ##self.textCons.config(state = DISABLED)
+
         self.msg=msg
         self.entryMsg.delete(0, END)
         self.messagePeer()
@@ -291,32 +286,55 @@ class GUI:
         
     ##client method: message a peer
     def messagePeer(self):
-        peer = str(self.peerList[self.outPeer.get()]) ##gets the port under this username
+        try:
+            peer = str(self.peerList[self.outPeer.get()]) ##gets the port under this username
+        except:
+            return
         if(peer==""):
             return
-        serverName = peer.split(":")[0]
-        serverPort = int(peer.split(":")[1])
+        try:
+            serverName = peer.split(":")[0]
+            serverPort = int(peer.split(":")[1])
+        except:
+            print("Peer improperly formatted. Delete from file.")
+            return
         
         clientMessage = self.msg
+        
         flag = True
         
         if (self.connectCheck((serverName, serverPort))):
             clientSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             clientSocket.connect((serverName,serverPort))
-    
+            print(clientMessage)
             if(clientMessage=="--EXIT"):
-                flag=False;
+                flag=False; ##FIX
             else:
-                self.printToScreen("To " + peer + ": " + clientMessage)
-                clientMessage = self.username + ": " + clientMessage
+                self.printToScreen("To " + self.getNameFromIP(peer) + ": " + clientMessage)
+                clientMessage = str(str(self.ip) + ":" + str(self.port)) + "///" + clientMessage
                 clientMessage = self.encrypt(clientMessage)
                 ##clientMessage = self.mod(clientMessage) ##encrypts message
             clientSocket.send(clientMessage.encode())
     
             serverMessage = clientSocket.recv(1024).decode()
-            print(serverMessage)
+            ##print(serverMessage)
             clientSocket.close()
+    
+    ## Thank you Terry
+    def voodooExit(self):
+        serverName = 'localhost'
+        serverPort = int(self.port)
         
+        clientMessage = "--QUIT"
+        
+        clientSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        clientSocket.connect((serverName,serverPort))
+    
+        clientSocket.send(clientMessage.encode())
+
+        clientSocket.close()
+        
+    ## Handles printing to the screen    
     def printToScreen(self, msg):
         self.textCons.config(state = NORMAL)
         self.textCons.insert(END,
@@ -324,77 +342,50 @@ class GUI:
                       
         self.textCons.config(state = DISABLED)
         self.textCons.see(END)
-        
-  
-    # function to receive messages
-    def receive(self):
-        while True:
-            try:
-                message = client.recv(1024).decode(FORMAT)
-                  
-                # if the messages from the server is NAME send the client's name
-                if message == 'NAME':
-                    client.send(self.name.encode(FORMAT))
-                else:
-                    # insert messages to text box
-                    self.printToScreen(message)
-            except:
-                # an error will be printed on the command line or console if there's an error
-                print("An error occured!")
-                client.close()
-                break 
           
-    # function to send messages 
-    def sendMessage(self):
-        self.textCons.config(state=DISABLED)
-        while True:
-            message = (f"{self.name}: {self.msg}")
-            client.send(message.encode(FORMAT))    
-            break    
-    # function to close window
+    # Function to close window
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
+            self.voodooExit()
             self.Window.destroy()
     
     def encrypt(self, msg): ##generate a new encryptor with custom key returns msg + key
         cryptoid = pyrc4.rc4(self.key)
         msg = cryptoid.getString(cryptoid.mxor(msg))
         return msg + "?3x?" + self.key
-        ##return msg + "?3x?" + cryptoid.keyStream
+
     def decrypt(self, msg): ##generates a new encryptor with custom key returns de-encrypted text
         grp = msg.split("?3x?")
         cryptoid = pyrc4.rc4(grp[1])
         msg = cryptoid.getString(cryptoid.mxor(grp[0]))
         return msg
     
+    ## Generate custom key
     def genCustomKey(self):
-        i=0
-        a = self.key
-        b = self.username
         c = self.key + self.username
-        
-        ##memory intensive        
-        ##if (len(b)==0):
-          ##  b="Unnamed Stranger"
-        ##while(i<len(a)):
-          ##  c = c + (chr(ord(a[i]) ^ ord(b[i%len(b)])))
-            ##i+=1
-
         self.key= str(c)
         
     def addPeer(self, newPeer):
         try:
-            peer = newPeer.split(":")
-            ip, port = str(peer[0]), int(peer[1])
-            self.addPeerToFile(newPeer)
-            self.refreshPeerList()
+            if (self.checkFormat(newPeer)):
+                self.addPeerToFile(newPeer)
+                self.refreshPeerList()
         except:
             print("Peer format incorred. Nothing added...")
         self.addPeerWin.destroy()
         time.sleep(.3)
         self.sender.deiconify()
+    def checkFormat(self, newPeer):
+        try:
+            newPeer = newPeer.split(":")
+            if (newPeer[0]==str(self.ip) and newPeer[1]==str(self.port)):
+                return False
+            newPeer[0], newPeer[1] = "A", "B"
+            return True
+        except:
+            return False
         
-    ##client method: add peer socket to file
+    ## Add peer socket to file
     def addPeerToFile(self, newPeer):
         duplicate = False
         self.getPeersFromFile()
@@ -410,7 +401,7 @@ class GUI:
             self.socketList.append(newPeer)
             socketListFile.close()
             
-    ##client method: retreive peer list sockets from file
+    ## Retreive peer list sockets from file
     def getPeersFromFile (self):
         duplicate = False
         socketListFile = open("data/PeerList"+str(self.port)+".txt", "r")
@@ -428,7 +419,7 @@ class GUI:
         socketListFile.close()
         self.getUsernameFromFile()
         
-    ##client method: find username for ip and allocate
+    ## Find username for ip and allocate
     def getUsernameFromFile(self):
         usernameFile = open("data/UsernameAssignment"+str(self.port)+".txt", "r")
         usernames = usernameFile.readlines()
@@ -438,17 +429,18 @@ class GUI:
             self.peerList[username] = socket
         usernameFile.close()
         
-    
+    ## Check connection before attempting to send message
     def connectCheck(self, socketPair):
         testSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         try:
             testSocket.connect(socketPair)
             testSocket.send("--EXIT".encode())
             return True
-        except socket.error as error: 
+        except socket.error: 
             print("Could not connect to " + str(socketPair[0]) +":" + str(socketPair[1]))
             return False
-        
+      
+    ## Refreshes peer list after adding    
     def refreshPeerList(self):
         self.outPeer = StringVar()
         self.outPeer.set("Peer")
@@ -459,6 +451,12 @@ class GUI:
                              rely = 0.070,
                              relheight = 0.05, 
                              relwidth = 0.44)
-
-# create a GUI class object
+    ## Helper method
+    def getNameFromIP(self, socket):
+        try:
+            return(str(list(self.peerList.keys())[list(self.peerList.values()).index(socket)]))
+        except:
+            return("")
+        
+## Starts the program
 g = GUI()

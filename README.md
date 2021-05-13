@@ -1,7 +1,7 @@
 ===SPYWIRE P2P Chat Application===
 Designed and programmed by Ian Vidal #vidali@wit.edu
 Additional methods developed by Richard Waltters #waltersr@wit.edu
-Current version: 0.2
+Current version: 0.3
 
 ==Description==
 
@@ -16,6 +16,10 @@ As of 5/10/2021 the application can now be compiled and used with its accompaniy
 As of 5/10/2021 the command line version of the program is deprecated with develepment now focusing solely on the GUI counterpart. The original command line version is still available in this repo for archival purposes but will be removed once the program goes live with version 1.0 in the coming months. 
 
 Requires socket and tkinter libraries to be installed in order to compile.
+
+==New Additions version 0.3==
+-fixed several issues with adding peers
+-allowed phonebook style documentation of peers
 
 ==New Additions version 0.2==
 -total refactoring of the code to accomodate a custom gui.
